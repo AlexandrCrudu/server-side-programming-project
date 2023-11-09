@@ -18,7 +18,6 @@ namespace SSP_assignment.Functions
         public HttpTriggerQueueFunction(ILoggerFactory loggerFactory)
         {
             _logger = loggerFactory.CreateLogger<HttpTriggerQueueFunction>();
-            _logger.LogInformation("iaibal");
         }
 
         [Function("EnqueueWeatherJob")]
@@ -26,12 +25,12 @@ namespace SSP_assignment.Functions
             [HttpTrigger(AuthorizationLevel.Function, "get", "post")] HttpRequestData req,
             FunctionContext executionContext)
         {
-            //var logger = executionContext.GetLogger("EnqueueWeatherJob");
+            
             _logger.LogInformation("C# HTTP trigger function processed a request.");
 
 
-            // Use the connection string "UseDevelopmentStorage=true" to use Azurite
-            var queueClient = new QueueClient("DefaultEndpointsProtocol=https;AccountName=imagestoragessp;AccountKey=DUSq7JOwFuaYdzNjncs0fxmQpWSGD3PcmZ4YiqpkepkFZAcHGVsVXqnh2EnOIC1uGA0md0FU69y6+AStq/n2aA==;EndpointSuffix=core.windows.net", "weather-jobs-queue");
+            
+            var queueClient = new QueueClient(Environment.GetEnvironmentVariable("StorageAccountConnectionString"), Environment.GetEnvironmentVariable("jobid-queue-name"));
             await queueClient.CreateIfNotExistsAsync();
 
             // Simulate fetching weather station data or other necessary details

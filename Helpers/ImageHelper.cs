@@ -102,9 +102,6 @@ public class ImageHelper
 
     public static byte[] AddWeatherDataToImage(byte[] imageBytes, string weatherData)
     {
-        // Load the image to determine its size
-        using var image = Image.Load(imageBytes);
-
         // Choose a simple font size and color
         int fontSize = 120; // This should be adjusted based on the image size
         string colorHex = "000000"; // Black color for the font

@@ -19,9 +19,6 @@ namespace SSP_assignment.Functions
     {
         private readonly ILogger _logger;
         private readonly HttpClient _httpClient;
-        private readonly string _blobStorageConnectionString = "DefaultEndpointsProtocol=https;AccountName=imagestoragessp;AccountKey=DUSq7JOwFuaYdzNjncs0fxmQpWSGD3PcmZ4YiqpkepkFZAcHGVsVXqnh2EnOIC1uGA0md0FU69y6+AStq/n2aA==;EndpointSuffix=core.windows.net"; // TODO: replace with your actual connection string
-        private readonly string _tableStorageConnectionString = "DefaultEndpointsProtocol=https;AccountName=imagestoragessp;AccountKey=DUSq7JOwFuaYdzNjncs0fxmQpWSGD3PcmZ4YiqpkepkFZAcHGVsVXqnh2EnOIC1uGA0md0FU69y6+AStq/n2aA==;EndpointSuffix=core.windows.net"; // Your connection string
-        private readonly string _tableName = "imageStatuses";
         public ProcessImageFunction(ILogger<ProcessImageFunction> logger, HttpClient httpClient)
         {
             _logger = logger;
@@ -29,7 +26,7 @@ namespace SSP_assignment.Functions
         }
 
         [Function(nameof(ProcessImageFunction))]
-        public async Task Run([QueueTrigger("image-queue", Connection = "AzureWebJobsStorage")] string imageQueueItem)
+        public async Task Run([QueueTrigger("image-queue", Connection = "StorageAccountConnectionString")] string imageQueueItem)
         {
             try
             {
@@ -48,8 +45,9 @@ namespace SSP_assignment.Functions
 
                 processedImageStream.Position = 0;
                 await UploadToBlobStorageAsync(processedImageStream, jobDetails.ImageId);
+                _logger.LogInformation($"uploaded to blob storage image with id: {jobDetails.ImageId}");
                 await UpdateImageStatusAsync(jobDetails.JobId, jobDetails.ImageId, "Processed");
-                _logger.LogError($"updated status of image with id : {jobDetails.ImageId}");
+                _logger.LogInformation($"updated status of image with id : {jobDetails.ImageId}");
 
             }
             catch (Exception ex)
@@ -64,7 +62,7 @@ namespace SSP_assignment.Functions
         private async Task UploadToBlobStorageAsync(Stream imageStream, string JobId)
         {
 
-            var blobServiceClient = new BlobServiceClient(_blobStorageConnectionString);
+            var blobServiceClient = new BlobServiceClient(Environment.GetEnvironmentVariable("StorageAccountConnectionString"));
             var blobContainerClient = blobServiceClient.GetBlobContainerClient("processed-images"); 
             var blobClient = blobContainerClient.GetBlobClient($"{JobId}.png");
 
@@ -80,7 +78,7 @@ namespace SSP_assignment.Functions
 
         private async Task UpdateImageStatusAsync(string jobId, string imageId, string status)
         {
-            var tableClient = new TableClient(_tableStorageConnectionString, _tableName);
+            var tableClient = new TableClient(Environment.GetEnvironmentVariable("StorageAccountConnectionString"), Environment.GetEnvironmentVariable("table-name"));
 
             try
             {

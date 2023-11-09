@@ -5,7 +5,7 @@ using Newtonsoft.Json;
 using Azure.Storage.Queues;
 using System.Threading.Tasks;
 using SSP_assignment.Services; // Assuming this is where IImageFetcherService is located
-using SSP_assignment.Interfaces; // Assuming this is where interfaces are located
+using SSP_assignment.Interfaces; 
 using SSP_assignment.Models;
 using System.Text;
 using Azure.Data.Tables;
@@ -29,24 +29,24 @@ namespace SSP_assignment.Functions
         }
 
         [Function(nameof(QueueStartJobFunction))]
-        public async Task Run([QueueTrigger("weather-jobs-queue", Connection = "AzureWebJobsStorage")] string myQueueItem)
+        public async Task Run([QueueTrigger("weather-jobs-queue", Connection = "StorageAccountConnectionString")] string myQueueItem)
         {
             var jobDetailsFromQueue = JsonConvert.DeserializeObject<JobDetails>(myQueueItem);
             var jobId = jobDetailsFromQueue.JobId ?? throw new InvalidOperationException("JobId is missing in the queue message.");
             var weatherData = await GetAllWeatherDataAsync();
-            var queueClient = new QueueClient("DefaultEndpointsProtocol=https;AccountName=imagestoragessp;AccountKey=DUSq7JOwFuaYdzNjncs0fxmQpWSGD3PcmZ4YiqpkepkFZAcHGVsVXqnh2EnOIC1uGA0md0FU69y6+AStq/n2aA==;EndpointSuffix=core.windows.net", "image-queue");
+            var queueClient = new QueueClient(Environment.GetEnvironmentVariable("StorageAccountConnectionString"), Environment.GetEnvironmentVariable("image-queue"));
             await queueClient.CreateIfNotExistsAsync();
 
             
-            var tableClient = new TableClient("DefaultEndpointsProtocol=https;AccountName=imagestoragessp;AccountKey=DUSq7JOwFuaYdzNjncs0fxmQpWSGD3PcmZ4YiqpkepkFZAcHGVsVXqnh2EnOIC1uGA0md0FU69y6+AStq/n2aA==;EndpointSuffix=core.windows.net", "imageStatuses");
+            var tableClient = new TableClient(Environment.GetEnvironmentVariable("StorageAccountConnectionString"), Environment.GetEnvironmentVariable("table-name"));
             await tableClient.CreateIfNotExistsAsync();
-            JobDetails jobDetails = null;
+            
             foreach (var singleWeatherData in weatherData)
             {
                 var imageId = Guid.NewGuid().ToString();
                 try
                 {
-                    jobDetails = new JobDetails
+                    JobDetails jobDetails = new JobDetails
                     {
                         ImageId = imageId,
                         ImageUrl = await _imageFetcherService.FetchRandomImageAsync(),
@@ -119,7 +119,6 @@ namespace SSP_assignment.Functions
             catch (Exception ex)
             {
                 _logger.LogError($"Error fetching weather data: {ex.Message}");
-                // You might want to handle this differently, perhaps returning an empty list is not the best approach
             }
 
             return allWeatherData;

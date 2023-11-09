@@ -17,8 +17,6 @@ namespace SSP_assignment.Functions
     public class HttpGetImageStatusFunction
     {
         private readonly ILogger _logger;
-        private readonly string _blobStorageConnectionString = "DefaultEndpointsProtocol=https;AccountName=imagestoragessp;AccountKey=DUSq7JOwFuaYdzNjncs0fxmQpWSGD3PcmZ4YiqpkepkFZAcHGVsVXqnh2EnOIC1uGA0md0FU69y6+AStq/n2aA==;EndpointSuffix=core.windows.net"; // TODO: replace with your actual connection string
-        private readonly string _tableStorageConnectionString = "DefaultEndpointsProtocol=https;AccountName=imagestoragessp;AccountKey=DUSq7JOwFuaYdzNjncs0fxmQpWSGD3PcmZ4YiqpkepkFZAcHGVsVXqnh2EnOIC1uGA0md0FU69y6+AStq/n2aA==;EndpointSuffix=core.windows.net";
 
         public HttpGetImageStatusFunction(ILogger<HttpGetImageStatusFunction> logger)
         {
@@ -36,33 +34,30 @@ namespace SSP_assignment.Functions
                 return req.CreateResponse(HttpStatusCode.BadRequest);
             }
 
-            var containerClient = new BlobContainerClient(_blobStorageConnectionString, "processed-images");
-            var tableClient = new TableClient(_tableStorageConnectionString, "imageStatuses");
+            var containerClient = new BlobContainerClient(Environment.GetEnvironmentVariable("StorageAccountConnectionString"), Environment.GetEnvironmentVariable("blob-container-name"));
+            var tableClient = new TableClient(Environment.GetEnvironmentVariable("StorageAccountConnectionString"), Environment.GetEnvironmentVariable("table-name"));
 
             try
             {
+                var results = new List<ImageResult>();
+                var blobNames = new HashSet<string>();
+           
 
-                var blobPages = containerClient.GetBlobsAsync();
-
-                var entityPages = tableClient.QueryAsync<TableEntity>(filter: $"PartitionKey eq '{jobId}'");
-
-
-                var results = new List<ImageResult>(); 
-                await foreach (var blobItem in blobPages)
+                await foreach (var blobItem in containerClient.GetBlobsAsync())
                 {
-                    string rowKey = blobItem.Name.TrimStart('$').Split('.')[0];
-                    var blobClient = containerClient.GetBlobClient(blobItem.Name);
-                    var blobUrl = blobClient.Uri.ToString();
+                    blobNames.Add(blobItem.Name.TrimStart('$').Split('.')[0]);
+                }
 
-                    var matchingEntity = await tableClient.GetEntityAsync<TableEntity>(jobId, rowKey);
-                    if (matchingEntity != null)
+           
+                await foreach (var entity in tableClient.QueryAsync<TableEntity>(filter: $"PartitionKey eq '{jobId}'"))
+                {
+                    string url = blobNames.Contains(entity.RowKey) ? containerClient.GetBlobClient($"${entity.RowKey}.png").Uri.ToString() : "";
+
+                    results.Add(new ImageResult
                     {
-                        results.Add(new ImageResult
-                        {
-                            Url = blobUrl,
-                            Status = matchingEntity.Value["Status"].ToString() // Ensure the property name matches your schema
-                        });
-                    }
+                        Url = url,
+                        Status = entity["Status"].ToString()
+                    });
                 }
 
                 var response = req.CreateResponse(HttpStatusCode.OK);
