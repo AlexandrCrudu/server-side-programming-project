@@ -1,10 +1,11 @@
 param location string = resourceGroup().location
-param storageAccountName string = 'myestorageacc'
-param functionAppName string = 'myfunctionapp'
+param storageAccountName string = 'crudustorageacc'
+param functionAppName string = 'crudumyfunctionapp'
 param firstQueueName string = 'jobstartqueue'
 param secondQueueName string = 'imagequeue'
 param blobContainerName string = 'myblobcontainer'
 param tableName string = 'mytable'
+param existingServerFarm string = 'ASP-sspassfunctionsgroup-9169'
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
   name: storageAccountName
@@ -52,7 +53,7 @@ resource functionApp 'Microsoft.Web/sites@2023-01-01' = {
   location: location
   kind: 'functionapp'
   properties: {
-    serverFarmId: '/subscriptions/${subscription().subscriptionId}/resourceGroups/${resourceGroup().name}/providers/Microsoft.Web/serverfarms/${functionAppName}HostingPlan'
+    serverFarmId: '/subscriptions/${subscription().subscriptionId}/resourceGroups/${resourceGroup().name}/providers/Microsoft.Web/serverfarms/${existingServerFarm}'
     siteConfig: {
       appSettings: [
         {
@@ -91,7 +92,6 @@ resource functionApp 'Microsoft.Web/sites@2023-01-01' = {
           name: 'StorageAccountConnectionString'
           value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccountName};AccountKey=${listKeys(storageAccount.id, storageAccount.apiVersion).keys[0].value};EndpointSuffix=core.windows.net'
         }
-        // Add any other required app settings here
       ]
     }
   }
@@ -102,12 +102,12 @@ resource functionApp 'Microsoft.Web/sites@2023-01-01' = {
 
 // Hosting plan for the function app
 resource hostingPlan 'Microsoft.Web/serverfarms@2023-01-01' = {
-  name: '${functionAppName}HostingPlan'
+  name: '${existingServerFarm}'
   location: location
   properties: {
     isXenon: false
-    sku: {
-      name: 'Y1' 
-    }
+  }
+  sku: {
+    name: 'Y1' 
   }
 }
