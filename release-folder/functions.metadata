@@ -1,0 +1,95 @@
+[
+  {
+    "name": "HttpGetImageStatusFunction",
+    "scriptFile": "SSP-assignment.dll",
+    "entryPoint": "SSP_assignment.Functions.HttpGetImageStatusFunction.Run",
+    "language": "dotnet-isolated",
+    "properties": {
+      "IsCodeless": false
+    },
+    "bindings": [
+      {
+        "name": "req",
+        "direction": "In",
+        "type": "httpTrigger",
+        "authLevel": "Function",
+        "methods": [
+          "get"
+        ],
+        "properties": {}
+      },
+      {
+        "name": "$return",
+        "type": "http",
+        "direction": "Out"
+      }
+    ]
+  },
+  {
+    "name": "EnqueueWeatherJob",
+    "scriptFile": "SSP-assignment.dll",
+    "entryPoint": "SSP_assignment.Functions.HttpTriggerQueueFunction.Run",
+    "language": "dotnet-isolated",
+    "properties": {
+      "IsCodeless": false
+    },
+    "bindings": [
+      {
+        "name": "req",
+        "direction": "In",
+        "type": "httpTrigger",
+        "authLevel": "Function",
+        "methods": [
+          "get",
+          "post"
+        ],
+        "properties": {}
+      },
+      {
+        "name": "$return",
+        "type": "http",
+        "direction": "Out"
+      }
+    ]
+  },
+  {
+    "name": "ProcessImageFunction",
+    "scriptFile": "SSP-assignment.dll",
+    "entryPoint": "SSP_assignment.Functions.ProcessImageFunction.Run",
+    "language": "dotnet-isolated",
+    "properties": {
+      "IsCodeless": false
+    },
+    "bindings": [
+      {
+        "name": "imageQueueItem",
+        "direction": "In",
+        "type": "queueTrigger",
+        "dataType": "String",
+        "queueName": "image-queue",
+        "connection": "StorageAccountConnectionString",
+        "properties": {}
+      }
+    ]
+  },
+  {
+    "name": "QueueStartJobFunction",
+    "scriptFile": "SSP-assignment.dll",
+    "entryPoint": "SSP_assignment.Functions.QueueStartJobFunction.Run",
+    "language": "dotnet-isolated",
+    "properties": {
+      "IsCodeless": false
+    },
+    "bindings": [
+      {
+        "name": "myQueueItem",
+        "direction": "In",
+        "type": "queueTrigger",
+        "dataType": "String",
+        "queueName": "weather-jobs-queue",
+        "connection": "StorageAccountConnectionString",
+        "properties": {}
+      }
+    ]
+  }
+]
