@@ -1,0 +1,49 @@
+{
+	"info": {
+		"_postman_id": "f1aa8adb-61f5-4ee9-96a5-80acaff47b4a",
+		"name": "ssp-functions",
+		"description": "This Postman collection contains requests for interacting with Azure Functions used in the SSP Assignment project. The functions are designed to handle various tasks related to processing weather data and managing job queues.\n\n**Notes:**\n\n- Ensure that you have the necessary authorization and environment variables configured for successful interaction with these functions.\n- The functions are part of a larger system for weather data processing, where jobs are enqueued and images are processed.\n- Use the provided function keys and parameters as described in each request's description.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "21013183"
+	},
+	"item": [
+		{
+			"name": "Get Image Status",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/HttpGetImageStatusFunction?jobId={{jobId}}&code={{code}}",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"HttpGetImageStatusFunction"
+					],
+					"query": [
+						{
+							"key": "jobId",
+							"value": "{{jobId}}"
+						},
+						{
+							"key": "code",
+							"value": "{{code}}"
+						}
+					]
+				},
+				"description": "This request retrieves the status and URLs of processed images associated with a specific job identified by the `jobId` query parameter.\n\n**HTTP Method:** GET\n\n**Parameters:**\n\n- `jobId` (Query Parameter): The unique identifier of the job for which you want to retrieve image statuses.\n    \n\n**Response:**\n\n- HTTP 200 OK: If the request is successful, it returns a JSON array containing image status and URLs.\n    \n- HTTP 400 Bad Request: If the `jobId` query parameter is missing or invalid.\n    \n- HTTP 500 Internal Server Error: If an error occurs while fetching image statuses.\n    \n\n**Usage:**\n\n1. Ensure that you have the necessary authorization and environment variables configured.\n    \n2. Send a GET request to this endpoint with the `jobId` query parameter to retrieve image statuses.\n    \n3. The response will contain information about each image's status and a URL for viewing the image.\n    \n\n**Notes:**\n\n- This function is part of the SSP Assignment project and relies on Azure Blob Storage and Azure Table Storage for storing image data and status information.\n    \n- The function also generates a Shared Access Signature (SAS) token to access the Blob Container securely."
+			},
+			"response": []
+		},
+		{
+			"name": "Enqueue Weather Job",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"description": "This function is designed to enqueue a new job related to weather data processing. When triggered via HTTP `GET` or `POST`, it generates a unique job identifier, serializes the job details into a JSON string, and encodes this string into a Base64 format. The resulting message is then sent to an Azure Queue named as per the `jobid-queue-name` environment variable.\n\n**Usage:**\n\n- **Method:** GET\n- **Authorization:** Function key (provided in query parameter `code`)\n- **Query Parameter:** `code` - The function key for authorizing access to the function.\n- **Body:** None required for GET, no specific payload is expected as the job details are internally generated.\n    \n\n**Response:**  \nUpon successful execution, the function returns an HTTP 200 OK status with a message confirming that the job has been enqueued, including the unique `JobId`. The `JobId` can be used for tracking the processing of the job or correlating with subsequent related operations.\n\n**Sample Response:**\n\n``` json\njsonCopy code\"Enqueued weather job: <unique-jobId>\"\n\n ```\n\n**Notes:**\n\n- This function is part of a larger system that processes weather data. The enqueued job will be picked up by a queue-triggered function for further processing.\n- Ensure the Azure Queue exists and that the function app has the necessary permissions to interact with it.\n- Use the returned `JobId` to query the status of the job from other components of the system if such functionality is provided."
+			},
+			"response": []
+		}
+	]
+}
