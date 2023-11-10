@@ -50,7 +50,7 @@ namespace SSP_assignment.Functions
                     {
                         ImageId = imageId,
                         ImageUrl = await _imageFetcherService.FetchRandomImageAsync(),
-                        WeatherData = singleWeatherData, // Assuming JobDetails has a property for weather data
+                        WeatherData = singleWeatherData, 
                         JobId = jobId
                     };
 

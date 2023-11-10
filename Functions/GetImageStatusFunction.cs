@@ -11,6 +11,8 @@ using System.Net;
 using Newtonsoft.Json;
 using SSP_assignment.Models;
 using Azure.Storage.Blobs.Models;
+using Azure.Storage.Sas;
+using Azure.Storage;
 
 namespace SSP_assignment.Functions
 {
@@ -41,7 +43,8 @@ namespace SSP_assignment.Functions
             {
                 var results = new List<ImageResult>();
                 var blobNames = new HashSet<string>();
-           
+
+                var sasToken = GetBlobContainerSasToken(containerClient, Environment.GetEnvironmentVariable("StorageAccountKey"));
 
                 await foreach (var blobItem in containerClient.GetBlobsAsync())
                 {
@@ -51,7 +54,8 @@ namespace SSP_assignment.Functions
            
                 await foreach (var entity in tableClient.QueryAsync<TableEntity>(filter: $"PartitionKey eq '{jobId}'"))
                 {
-                    string url = blobNames.Contains(entity.RowKey) ? containerClient.GetBlobClient($"${entity.RowKey}.png").Uri.ToString() : "";
+                    string blobName = $"{entity.RowKey}.png";
+                    string url = blobNames.Contains(entity.RowKey) ? $"{containerClient.GetBlobClient(blobName).Uri}?{sasToken}" : "";
 
                     results.Add(new ImageResult
                     {
@@ -69,6 +73,21 @@ namespace SSP_assignment.Functions
                 _logger.LogError($"Error fetching image statuses: {ex.Message}");
                 return req.CreateResponse(HttpStatusCode.InternalServerError);
             }
+        }
+
+
+        private string GetBlobContainerSasToken(BlobContainerClient containerClient, string accountKey)
+        {
+            BlobSasBuilder sasBuilder = new BlobSasBuilder
+            {
+                BlobContainerName = Environment.GetEnvironmentVariable("blob-container-name"),
+                Resource = "b",
+                StartsOn = DateTimeOffset.UtcNow.AddMinutes(-5),
+                ExpiresOn = DateTimeOffset.UtcNow.AddHours(1),
+                Protocol = SasProtocol.Https
+            };
+            sasBuilder.SetPermissions(BlobContainerSasPermissions.List | BlobContainerSasPermissions.Read);
+            return sasBuilder.ToSasQueryParameters(new StorageSharedKeyCredential(containerClient.AccountName, accountKey)).ToString();
         }
     }
 }
